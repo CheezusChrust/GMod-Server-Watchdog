@@ -1,0 +1,1 @@
+pyinstaller gmodwatchdog.py --onefile

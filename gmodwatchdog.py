@@ -23,7 +23,9 @@ def notify(String):
 
 
 defaultConfigFile = """
+#Garry's Mod Watchdog configuration file
 #Delete this config and start the program again to regenerate this file with default values
+#You can update this file while the server is running, the changes will be applied on server restart
 
 #It's recommended to use srcds_console.exe (from Alien Swarm: Reactive Drop), because it doesn't create a second console window
 executable=srcds_console.exe
@@ -40,7 +42,7 @@ timeBeforeForceRestart=30
 
 #Delay (in seconds) before starting watchdog, to allow the server to fully start up
 startupDelay=30
-"""
+""".strip()
 
 defaultConfig = {
     "executable": "srcds_console.exe",
@@ -126,7 +128,27 @@ def updateAddons():
             warn(f"Failed to update {addonName}: {e}")
 
 
-def runSRCDS():
+def updateServer():
+    if config["steamCMDPath"] == "":
+        notify("steamCMDPath is not set, skipping server updates")
+
+        return
+
+    steamCMD = path.join(config["steamCMDPath"], "steamcmd.exe")
+
+    if not path.exists(steamCMD):
+        warn("Couldn't find steamcmd.exe, please make sure steamCMDPath is set correctly")
+
+        return
+
+    try:
+        notify("Updating server via SteamCMD")
+        subprocess.run([steamCMD, f"+force_install_dir \"{os.getcwd()}\"", "+login anonymous", "+app_update 4020", "+quit"])
+    except Exception as e:
+        warn(f"Failed to update server: {e}")
+
+
+def SRCDSThread():
     global srcds
     global startupTime
     global lastPing
@@ -148,8 +170,9 @@ def runSRCDS():
 
 def startServer():
     if srcds is None:
+        updateServer()
         updateAddons()
-        Thread(target=runSRCDS).start()
+        Thread(target=SRCDSThread).start()
 
 
 def stopServer():
