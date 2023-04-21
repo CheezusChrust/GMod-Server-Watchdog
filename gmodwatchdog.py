@@ -2,8 +2,10 @@ import subprocess
 from threading import Thread
 from time import sleep, time
 import os
+from os import path
 import a2s
 import socket
+import sys
 import colorama
 from colorama import Fore as Color
 
@@ -65,7 +67,7 @@ defaultConfig = {
 }
 
 
-if not os.path.exists("servermanager.cfg"):
+if not path.exists("servermanager.cfg"):
     with open("servermanager.cfg", "w") as file:
         file.write(defaultConfigFile)
         warn("Config file not found, please edit the created servermanager.cfg file and restart the program")
@@ -85,7 +87,7 @@ if config["executable"] == "":
     config["executable"] = "srcds_console.exe"
 
 
-if not os.path.exists(config["executable"]):
+if not path.exists(config["executable"]):
     warn(f"Executable not found, please make sure {config['executable']} exists")
     os.system("pause")
     exit(1)
@@ -98,15 +100,15 @@ lastPing = time()
 def updateAddons():
     addonsDir = os.getcwd() + "/garrysmod/addons/"
 
-    if not os.path.exists(addonsDir):
+    if not path.exists(addonsDir):
         warn("Addons directory does not exist")
 
         return
 
     dirs = [
-        os.path.join(addonsDir, d)
+        path.join(addonsDir, d)
         for d in os.listdir(addonsDir)
-        if os.path.isdir(os.path.join(addonsDir, d))
+        if path.isdir(path.join(addonsDir, d))
     ]
 
     for d in dirs:
@@ -122,13 +124,21 @@ def updateAddons():
             warn(f"Failed to update {friendlyDir}: {e}")
 
 
+if getattr(sys, 'frozen', False) and config["executable"] == "srcds_console.exe":
+    # we are running in a bundle
+    executable = path.join(sys._MEIPASS, config["executable"])
+else:
+    # we are running in a normal Python environment
+    executable = path.join(path.dirname(path.abspath(__file__)), config["executable"])
+
+
 def runSRCDS():
     global srcds
     global startupTime
     global lastPing
 
     try:
-        srcds = subprocess.Popen(f"{os.getcwd()}/{config['executable']} {config['args']}")
+        srcds = subprocess.Popen(f"{executable} {config['args']}")
         startupTime = time()
         lastPing = startupTime + int(config["startupDelay"])
         srcds.wait()
