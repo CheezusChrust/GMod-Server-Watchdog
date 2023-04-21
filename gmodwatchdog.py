@@ -18,6 +18,7 @@ def warn(String):
 def notify(String):
     print(Color.GREEN + String + Color.RESET)
 
+
 def parseConfig(f):
     config = {}
 
@@ -41,9 +42,8 @@ def parseConfig(f):
 defaultConfigFile = """
 #Delete this config and start the program again to regenerate this file with default values
 
-#If you want to use a different executable, put it here
-#Leave it blank to use the integrated srcds_console.exe (from Alien Swarm: Reactive Drop), which doesn't create a second console window
-executable=
+#It's recommended to use srcds_console.exe (from Alien Swarm: Reactive Drop), because it doesn't create a second console window
+executable=srcds_console.exe
 
 args=-console -game garrysmod -console -port 27015 -norestart +maxplayers 32 +gamemode sandbox +map gm_construct
 
@@ -67,15 +67,15 @@ defaultConfig = {
 }
 
 
-if not path.exists("servermanager.cfg"):
-    with open("servermanager.cfg", "w") as file:
+if not path.exists("gmodwatchdog.cfg"):
+    with open("gmodwatchdog.cfg", "w") as file:
         file.write(defaultConfigFile)
-        warn("Config file not found, please edit the created servermanager.cfg file and restart the program")
+        warn("Config file not found, please edit the created gmodwatchdog.cfg file and restart the program")
         os.system("pause")
         exit(1)
 
 
-config = parseConfig("servermanager.cfg")
+config = parseConfig("gmodwatchdog.cfg")
 
 for key, value in defaultConfig.items():
     if key not in config:
@@ -83,11 +83,18 @@ for key, value in defaultConfig.items():
         print("Using default value for", key)
 
 
-if config["executable"] == "":
-    config["executable"] = "srcds_console.exe"
+# Can't get srcds to run properly from a location that isn't the server directory, need to figure this out sometime
+#if config["executable"] == "":
+#    config["executable"] = "srcds_console.exe"
 
+#if getattr(sys, 'frozen', False) and config["executable"] == "srcds_console.exe":
+    # we are running in a bundle
+#    executable = path.join(sys._MEIPASS, config["executable"])
+#else:
+    # we are running in a normal Python environment
+executable = path.join(os.getcwd(), config["executable"])
 
-if not path.exists(config["executable"]):
+if not path.exists(executable):
     warn(f"Executable not found, please make sure {config['executable']} exists")
     os.system("pause")
     exit(1)
@@ -122,14 +129,6 @@ def updateAddons():
                 warn(f"Failed to update {friendlyDir}: git error")
         except Exception as e:
             warn(f"Failed to update {friendlyDir}: {e}")
-
-
-if getattr(sys, 'frozen', False) and config["executable"] == "srcds_console.exe":
-    # we are running in a bundle
-    executable = path.join(sys._MEIPASS, config["executable"])
-else:
-    # we are running in a normal Python environment
-    executable = path.join(path.dirname(path.abspath(__file__)), config["executable"])
 
 
 def runSRCDS():
